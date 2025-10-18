@@ -29,9 +29,10 @@ export class AuthController {
     // L'utilisateur a été validé par Passport et attaché à req.user
     const loginResult = this.authService.login(req.user);
 
-    // Redirection vers le frontend avec le token
-    // Pour l'instant, on retourne juste le JSON
-    return res.json(loginResult);
+    // Redirection vers le frontend avec le token et les infos user
+    const frontendUrl = `http://localhost:3001/callback?token=${loginResult.access_token}&user=${encodeURIComponent(JSON.stringify(loginResult.user))}`;
+
+    return res.redirect(frontendUrl);
   }
 
   @Get('profile')
