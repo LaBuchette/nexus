@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -20,8 +21,11 @@ import { AppService } from './app.service';
       password: process.env.DB_PASSWORD || 'nexus_password_dev',
       database: process.env.DB_DATABASE || 'nexus_db',
       autoLoadEntities: true,
-      synchronize: true, // ⚠️ À désactiver en production !
+      synchronize: true,
+      logging: true,
     }),
+
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
