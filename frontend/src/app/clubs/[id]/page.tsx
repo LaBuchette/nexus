@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import Chat from "@/components/Chat";
 
 interface Club {
   id: string;
@@ -257,7 +258,7 @@ export default function ClubDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Colonne principale */}
+          {/* Colonne principale (à gauche) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Description */}
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
@@ -321,9 +322,14 @@ export default function ClubDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Chat - NOUVEAU ! */}
+            {currentUserId && isMember && (
+              <Chat clubId={club.id} userId={currentUserId} />
+            )}
           </div>
 
-          {/* Colonne latérale */}
+          {/* Colonne latérale (à droite) */}
           <div className="space-y-6">
             {/* Propriétaire */}
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
