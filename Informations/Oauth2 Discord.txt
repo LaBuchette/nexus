@@ -1,0 +1,4 @@
+// Oauth2 Discord //
+
+**CLIENT ID** : 1429010172784676884
+**CLIENT SECRET** : sqyyqQL2KRiPMdqcahsqk8MZqNJu7Du-
