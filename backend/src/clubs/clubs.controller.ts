@@ -67,4 +67,41 @@ export class ClubsController {
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.clubsService.remove(id, req.user.id);
   }
+
+  // === ROUTES MEMBRES ===
+
+  // JOIN - Rejoindre un club (protégé)
+  @Post(':id/join')
+  @UseGuards(AuthGuard('jwt'))
+  joinClub(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.clubsService.joinClub(id, req.user.id);
+  }
+
+  // LEAVE - Quitter un club (protégé)
+  @Post(':id/leave')
+  @UseGuards(AuthGuard('jwt'))
+  leaveClub(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.clubsService.leaveClub(id, req.user.id);
+  }
+
+  // MEMBERS - Liste des membres (public)
+  @Get(':id/members')
+  getClubMembers(@Param('id') id: string) {
+    return this.clubsService.getClubMembers(id);
+  }
+
+  // IS MEMBER - Vérifier si l'utilisateur est membre (protégé)
+  @Get(':id/is-member')
+  @UseGuards(AuthGuard('jwt'))
+  async isUserMember(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const isMember = await this.clubsService.isUserMember(id, req.user.id);
+    return { isMember };
+  }
+
+  // MY MEMBERSHIPS - Clubs dont je suis membre (protégé)
+  @Get('user/memberships')
+  @UseGuards(AuthGuard('jwt'))
+  getUserClubs(@Req() req: RequestWithUser) {
+    return this.clubsService.getUserClubs(req.user.id);
+  }
 }

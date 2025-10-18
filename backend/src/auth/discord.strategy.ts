@@ -2,10 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, Profile } from 'passport-discord';
 import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class DiscordStrategy extends PassportStrategy(Strategy, 'discord') {
-  constructor(private authService: AuthService) {
+  constructor(
+    private usersService: UsersService,
+    private authService: AuthService,
+  ) {
+    console.log(
+      '🔍 DEBUG - Discord Callback URL:',
+      process.env.DISCORD_CALLBACK_URL,
+    );
+
     super({
       clientID: process.env.DISCORD_CLIENT_ID || '',
       clientSecret: process.env.DISCORD_CLIENT_SECRET || '',

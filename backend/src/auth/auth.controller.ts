@@ -26,11 +26,14 @@ export class AuthController {
   @Get('discord/callback')
   @UseGuards(AuthGuard('discord'))
   discordCallback(@Req() req: RequestWithUser, @Res() res: ExpressResponse) {
-    // L'utilisateur a été validé par Passport et attaché à req.user
     const loginResult = this.authService.login(req.user);
 
+    // Détecter l'hostname depuis la requête
+    const hostname = req.headers.host?.split(':')[0] || 'localhost';
+    const frontendPort = '3001';
+
     // Redirection vers le frontend avec le token et les infos user
-    const frontendUrl = `http://localhost:3001/callback?token=${loginResult.access_token}&user=${encodeURIComponent(JSON.stringify(loginResult.user))}`;
+    const frontendUrl = `http://${hostname}:${frontendPort}/callback?token=${loginResult.access_token}&user=${encodeURIComponent(JSON.stringify(loginResult.user))}`;
 
     return res.redirect(frontendUrl);
   }
