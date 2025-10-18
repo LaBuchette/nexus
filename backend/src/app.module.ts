@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ClubsModule } from './clubs/clubs.module';
 import { MessagesModule } from './messages/messages.module';
+import { LfgModule } from './lfg/lfg.module';
 
 @Module({
   imports: [
@@ -35,6 +36,8 @@ import { MessagesModule } from './messages/messages.module';
     ClubsModule,
 
     MessagesModule,
+
+    LfgModule,
   ],
   controllers: [AppController],
   providers: [AppService],
