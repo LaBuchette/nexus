@@ -12,7 +12,7 @@ import { UsersModule } from '../users/users.module'; // ← AJOUTEZ CETTE LIGNE
     PassportModule,
     UsersModule, // ← AJOUTEZ CETTE LIGNE
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-secret-key',
+      secret: process.env.JWT_SECRET || 'nexus_super_secret_key_dev_2025',
       signOptions: { expiresIn: '7d' },
     }),
   ],

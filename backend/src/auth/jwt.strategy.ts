@@ -26,14 +26,21 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: JwtPayload): Promise<User> {
+    console.log('🔍 JWT Validation - Payload:', payload);
+    console.log('🔍 JWT Validation - Looking for user ID:', payload.sub);
+
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },
     });
 
+    console.log('🔍 JWT Validation - User found:', user ? 'YES ✅' : 'NO ❌');
+
     if (!user) {
+      console.log('❌ JWT Validation - User not found in database');
       throw new UnauthorizedException('Utilisateur non trouvé');
     }
 
+    console.log('✅ JWT Validation - User validated:', user.username);
     return user;
   }
 }
