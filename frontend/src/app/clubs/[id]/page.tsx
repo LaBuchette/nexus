@@ -30,6 +30,9 @@ export default function ClubDetailPage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  const [joining, setJoining] = useState(false); // ← AJOUTEZ
 
   useEffect(() => {
     // Récupérer l'ID de l'utilisateur connecté
@@ -40,7 +43,8 @@ export default function ClubDetailPage() {
     }
 
     // Récupérer les détails du club
-    fetch(`http://localhost:3000/clubs/${params.id}`)
+    const hostname = window.location.hostname;
+    fetch(`http://${hostname}:3000/clubs/${params.id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Club non trouvé");
         return res.json();
@@ -52,6 +56,24 @@ export default function ClubDetailPage() {
           setIsOwner(data.ownerId === user.id);
         }
         setLoading(false);
+
+        // Charger les membres
+        return fetch(`http://${hostname}:3000/clubs/${params.id}/members`);
+      })
+      .then((res) => res?.json())
+      .then((membersData) => {
+        if (membersData) {
+          setMembers(membersData);
+
+          // Vérifier si l'utilisateur est membre
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            const isMemberCheck = membersData.some(
+              (m: any) => m.userId === user.id
+            );
+            setIsMember(isMemberCheck);
+          }
+        }
       })
       .catch((error) => {
         console.error("Erreur:", error);
@@ -72,18 +94,60 @@ export default function ClubDetailPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/clubs/${params.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const hostname = window.location.hostname;
+      const response = await fetch(
+        `http://${hostname}:3000/clubs/${params.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.ok) {
         router.push("/clubs");
       }
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
+    }
+  };
+
+  const handleJoin = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.push("/");
+      return;
+    }
+
+    setJoining(true);
+
+    try {
+      const hostname = window.location.hostname;
+      const response = await fetch(
+        `http://${hostname}:3000/clubs/${params.id}/join`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Recharger la page pour voir les changements
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(
+          error.message || "Erreur lors de la tentative de rejoindre le club"
+        );
+        setJoining(false);
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Une erreur est survenue");
+      setJoining(false);
     }
   };
 
@@ -205,16 +269,57 @@ export default function ClubDetailPage() {
               </p>
             </div>
 
-            {/* Membres (à venir) */}
+            {/* Membres */}
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">
-                👥 Membres ({club.memberCount})
+                👥 Membres ({members.length})
               </h2>
-              <div className="text-center py-8">
-                <p className="text-gray-300 mb-4">
-                  Le système de membres arrive bientôt ! 🚀
-                </p>
-              </div>
+
+              {members.length > 0 ? (
+                <div className="space-y-3">
+                  {members.map((member: any) => {
+                    const memberAvatarUrl = member.user.avatar
+                      ? `https://cdn.discordapp.com/avatars/${member.user.discordId}/${member.user.avatar}.png`
+                      : "https://cdn.discordapp.com/embed/avatars/0.png";
+
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-center gap-3 bg-white/5 p-3 rounded-lg"
+                      >
+                        <img
+                          src={memberAvatarUrl}
+                          alt={member.user.username}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div className="flex-1">
+                          <div className="text-white font-semibold">
+                            {member.user.username}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            Membre depuis le{" "}
+                            {new Date(member.joinedAt).toLocaleDateString(
+                              "fr-FR"
+                            )}
+                          </div>
+                        </div>
+                        {member.role === "owner" && (
+                          <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded-full">
+                            👑 Owner
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-300 mb-4">
+                    Aucun membre pour le moment. Soyez le premier à rejoindre !
+                    🚀
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -246,10 +351,20 @@ export default function ClubDetailPage() {
 
               {currentUserId ? (
                 <div className="space-y-3">
-                  {!isOwner && (
-                    <button className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-semibold">
-                      ➕ Rejoindre le Club
+                  {!isOwner && !isMember && (
+                    <button
+                      onClick={handleJoin}
+                      disabled={joining}
+                      className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg transition-colors font-semibold"
+                    >
+                      {joining ? "⏳ Rejoindre..." : "➕ Rejoindre le Club"}
                     </button>
+                  )}
+
+                  {!isOwner && isMember && (
+                    <div className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg font-semibold text-center">
+                      ✅ Vous êtes membre
+                    </div>
                   )}
 
                   {isOwner && (

@@ -32,7 +32,8 @@ export default function ClubsPage() {
     setIsAuthenticated(!!token);
 
     // Récupérer la liste des clubs
-    fetch("http://localhost:3000/clubs")
+    const hostname = window.location.hostname;
+    fetch(`http://${hostname}:3000/clubs`)
       .then((res) => res.json())
       .then((data) => {
         setClubs(data);

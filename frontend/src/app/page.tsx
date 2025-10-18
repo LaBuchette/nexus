@@ -3,7 +3,7 @@
 export default function Home() {
   const handleLogin = () => {
     // Redirige vers le backend pour l'auth Discord
-    window.location.href = "http://localhost:3000/auth/discord";
+    window.location.href = `http://${window.location.hostname}:3000/auth/discord`;
   };
 
   return (
