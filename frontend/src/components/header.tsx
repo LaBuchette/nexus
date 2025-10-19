@@ -11,11 +11,23 @@ interface User {
   discordId: string;
 }
 
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  relatedEntityId: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export default function Header() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   useEffect(() => {
     // Récupérer l'utilisateur connecté
@@ -58,6 +70,91 @@ export default function Header() {
 
     return () => clearInterval(interval);
   }, [user]);
+
+  // Charger les notifications non lues
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    try {
+      setLoadingNotifications(true);
+      const token = localStorage.getItem("access_token");
+      const hostname = window.location.hostname;
+
+      const response = await fetch(
+        `http://${hostname}:3000/notifications/unread`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error("Erreur notifications:", error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  // Marquer UNE notification comme lue
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const hostname = window.location.hostname;
+
+      await fetch(
+        `http://${hostname}:3000/notifications/${notificationId}/read`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Recharger les données
+      fetchNotifications();
+
+      // Mettre à jour le compteur (diminuer de 1)
+      setNotificationCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
+
+  // Marquer TOUTES les notifications comme lues
+  const markAllAsRead = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const hostname = window.location.hostname;
+
+      await fetch(`http://${hostname}:3000/notifications/read-all`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Recharger les données
+      fetchNotifications();
+      setNotificationCount(0);
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
+
+  // Gérer le clic sur une notification
+  const handleNotificationClick = (notification: Notification) => {
+    // Marquer comme lue
+    markAsRead(notification.id);
+
+    // Rediriger selon le type
+    if (notification.type === "friend_request") {
+      router.push("/friends");
+    }
+    // Plus tard : ajouter d'autres types
+
+    // Fermer le dropdown
+    setShowNotifications(false);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
@@ -124,7 +221,12 @@ export default function Header() {
             {/* 🔔 CLOCHE DE NOTIFICATIONS */}
             <div className="relative">
               <button
-                onClick={() => setShowNotifications(!showNotifications)}
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications) {
+                    fetchNotifications(); // Charger quand on ouvre
+                  }
+                }}
                 className="relative text-white hover:text-indigo-300 transition-colors p-2 hover:bg-white/10 rounded-lg"
               >
                 <span className="text-2xl">🔔</span>
@@ -135,17 +237,97 @@ export default function Header() {
                 )}
               </button>
 
-              {/* Dropdown des notifications (version simple pour l'instant) */}
+              {/* Dropdown des notifications - VERSION COMPLÈTE ! */}
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-gray-900 rounded-lg shadow-2xl border border-white/20 z-50">
-                  <div className="p-4">
-                    <p className="text-white text-center font-semibold">
-                      🚧 Dropdown en construction... 🚧
-                    </p>
-                    <p className="text-gray-400 text-sm text-center mt-2">
-                      Vous avez {notificationCount} notification
-                      {notificationCount > 1 ? "s" : ""}
-                    </p>
+                <div className="absolute right-0 mt-2 w-96 bg-gray-900 rounded-lg shadow-2xl border border-white/20 z-50 max-h-[600px] overflow-hidden flex flex-col">
+                  {/* Header du dropdown */}
+                  <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                    <h3 className="text-white font-bold text-lg">
+                      🔔 Notifications
+                    </h3>
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-sm text-indigo-400 hover:text-indigo-300 font-semibold"
+                      >
+                        ✓ Tout marquer comme lu
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Liste des notifications */}
+                  <div className="overflow-y-auto max-h-[500px]">
+                    {loadingNotifications ? (
+                      <div className="p-8 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+                        <p className="text-gray-400 text-sm mt-2">
+                          Chargement...
+                        </p>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <div className="text-5xl mb-3">✅</div>
+                        <p className="text-white font-semibold mb-1">
+                          Aucune notification
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          Vous êtes à jour !
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-white/10">
+                        {notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            className="p-4 hover:bg-white/5 transition-colors cursor-pointer group"
+                            onClick={() => handleNotificationClick(notif)}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Icône selon le type */}
+                              <div className="text-2xl mt-1">
+                                {notif.type === "friend_request" && "👥"}
+                                {notif.type === "friend_request_accepted" &&
+                                  "✅"}
+                                {notif.type === "club_invitation" && "🎮"}
+                                {notif.type === "message" && "💬"}
+                              </div>
+
+                              {/* Contenu */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-semibold text-sm mb-1">
+                                  {notif.title}
+                                </p>
+                                <p className="text-gray-300 text-xs mb-2 line-clamp-2">
+                                  {notif.message}
+                                </p>
+                                <p className="text-gray-500 text-xs">
+                                  {new Date(notif.createdAt).toLocaleDateString(
+                                    "fr-FR",
+                                    {
+                                      day: "numeric",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
+                                </p>
+                              </div>
+
+                              {/* Bouton marquer comme lu */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Empêcher le clic de propager
+                                  markAsRead(notif.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 text-indigo-400 hover:text-indigo-300 text-xs font-semibold transition-opacity"
+                              >
+                                ✓
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
