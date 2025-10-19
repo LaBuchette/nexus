@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { ClubsModule } from './clubs/clubs.module';
 import { MessagesModule } from './messages/messages.module';
 import { LfgModule } from './lfg/lfg.module';
+import { FriendsModule } from './friends/friends.module';
 
 @Module({
   imports: [
@@ -38,6 +39,8 @@ import { LfgModule } from './lfg/lfg.module';
     MessagesModule,
 
     LfgModule,
+
+    FriendsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
