@@ -10,12 +10,14 @@ import {
   FriendRequest,
   FriendRequestStatus,
 } from './entities/friend-request.entity';
+import { BlocksService } from '../blocks/blocks.service';
 
 @Injectable()
 export class FriendsService {
   constructor(
     @InjectRepository(FriendRequest)
     private friendRequestRepository: Repository<FriendRequest>,
+    private blocksService: BlocksService,
   ) {}
 
   // Envoyer une demande d'ami
@@ -27,6 +29,18 @@ export class FriendsService {
     if (senderId === receiverId) {
       throw new BadRequestException(
         'Vous ne pouvez pas vous ajouter vous-même',
+      );
+    }
+
+    // NOUVEAU : Vérifier les blocages (dans les 2 sens)
+    const isBlocked = await this.blocksService.isBlockedBidirectional(
+      senderId,
+      receiverId,
+    );
+
+    if (isBlocked) {
+      throw new BadRequestException(
+        "Impossible d'envoyer une demande à cet utilisateur",
       );
     }
 
@@ -95,6 +109,18 @@ export class FriendsService {
     // Vérifier que la demande est en attente
     if (request.status !== FriendRequestStatus.PENDING) {
       throw new BadRequestException('Cette demande a déjà été traitée');
+    }
+
+    // NOUVEAU : Vérifier les blocages avant d'accepter
+    const isBlocked = await this.blocksService.isBlockedBidirectional(
+      request.senderId,
+      request.receiverId,
+    );
+
+    if (isBlocked) {
+      throw new BadRequestException(
+        "Impossible d'accepter cette demande car un blocage existe",
+      );
     }
 
     // Accepter
