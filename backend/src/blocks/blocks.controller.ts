@@ -67,4 +67,18 @@ export class BlocksController {
     );
     return { isBlocked };
   }
+
+  // Vérifier si deux utilisateurs se sont bloqués mutuellement (dans un sens ou l'autre)
+  @Get('check-bidirectional/:userId')
+  @UseGuards(AuthGuard('jwt'))
+  async checkIfBlockedBidirectional(
+    @Param('userId') otherUserId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const isBlocked = await this.blocksService.isBlockedBidirectional(
+      req.user.id,
+      otherUserId,
+    );
+    return { isBlocked };
+  }
 }

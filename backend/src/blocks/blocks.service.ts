@@ -7,12 +7,18 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Block } from './entities/block.entity';
+import {
+  FriendRequest,
+  FriendRequestStatus,
+} from '../friends/entities/friend-request.entity';
 
 @Injectable()
 export class BlocksService {
   constructor(
     @InjectRepository(Block)
     private blockRepository: Repository<Block>,
+    @InjectRepository(FriendRequest)
+    private friendRequestRepository: Repository<FriendRequest>,
   ) {}
 
   // Bloquer un utilisateur
@@ -36,6 +42,32 @@ export class BlocksService {
     if (existingBlock) {
       throw new ConflictException('Cet utilisateur est déjà bloqué');
     }
+
+    // NOUVEAU : Supprimer l'amitié si elle existe (dans les 2 sens)
+    await this.friendRequestRepository.delete({
+      senderId: blockerId,
+      receiverId: blockedId,
+      status: FriendRequestStatus.ACCEPTED,
+    });
+
+    await this.friendRequestRepository.delete({
+      senderId: blockedId,
+      receiverId: blockerId,
+      status: FriendRequestStatus.ACCEPTED,
+    });
+
+    // NOUVEAU : Supprimer aussi les demandes en attente (optionnel mais propre)
+    await this.friendRequestRepository.delete({
+      senderId: blockerId,
+      receiverId: blockedId,
+      status: FriendRequestStatus.PENDING,
+    });
+
+    await this.friendRequestRepository.delete({
+      senderId: blockedId,
+      receiverId: blockerId,
+      status: FriendRequestStatus.PENDING,
+    });
 
     // Créer le blocage
     const block = this.blockRepository.create({

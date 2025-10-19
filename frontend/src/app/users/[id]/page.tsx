@@ -123,8 +123,9 @@ export default function UserProfilePage() {
       const token = localStorage.getItem("access_token");
       const hostname = window.location.hostname;
 
+      // Utiliser la route bidirectionnelle
       const response = await fetch(
-        `http://${hostname}:3000/blocks/check/${userId}`,
+        `http://${hostname}:3000/blocks/check-bidirectional/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -287,8 +288,15 @@ export default function UserProfilePage() {
 
           {/* Boutons d'action */}
           <div className="flex gap-4 mb-8">
-            {/* Bouton Ajouter en ami / Déjà ami / Demande en attente */}
-            {isFriend ? (
+            {/* Bouton Ajouter en ami / État */}
+            {isBlocked ? (
+              <button
+                disabled
+                className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold cursor-not-allowed"
+              >
+                🚫 Utilisateur bloqué
+              </button>
+            ) : isFriend ? (
               <button
                 disabled
                 className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold cursor-not-allowed"
@@ -301,13 +309,6 @@ export default function UserProfilePage() {
                 className="flex-1 px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold cursor-not-allowed"
               >
                 ⏳ Demande en attente
-              </button>
-            ) : isBlocked ? (
-              <button
-                disabled
-                className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold cursor-not-allowed"
-              >
-                🚫 Utilisateur bloqué
               </button>
             ) : (
               <button
