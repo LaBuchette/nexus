@@ -23,6 +23,9 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
+  @Column({ default: false })
+  hasCompletedOnboarding: boolean;
+
   @Column({ nullable: true })
   discriminator: string;
 

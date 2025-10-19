@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
@@ -26,6 +29,16 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   findAll() {
     return this.usersService.findAll();
+  }
+
+  // IMPORTANT : Cette route DOIT être AVANT @Get(':id') !
+  // Sinon "complete-onboarding" sera considéré comme un ID !
+  @Patch('complete-onboarding')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  async completeOnboarding(@Request() req) {
+    const userId = req.user.id;
+    return await this.usersService.completeOnboarding(userId);
   }
 
   @Get(':id')
