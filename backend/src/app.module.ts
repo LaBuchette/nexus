@@ -9,6 +9,7 @@ import { ClubsModule } from './clubs/clubs.module';
 import { MessagesModule } from './messages/messages.module';
 import { LfgModule } from './lfg/lfg.module';
 import { FriendsModule } from './friends/friends.module';
+import { BlocksModule } from './blocks/blocks.module';
 
 @Module({
   imports: [
@@ -41,6 +42,8 @@ import { FriendsModule } from './friends/friends.module';
     LfgModule,
 
     FriendsModule,
+
+    BlocksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
