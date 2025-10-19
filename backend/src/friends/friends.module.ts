@@ -5,11 +5,13 @@ import { FriendsController } from './friends.controller';
 import { FriendRequest } from './entities/friend-request.entity';
 import { UsersModule } from '../users/users.module';
 import { BlocksModule } from '../blocks/blocks.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([FriendRequest]),
     UsersModule,
-    BlocksModule, // ← AJOUTE CETTE LIGNE
+    BlocksModule,
+    NotificationsModule,
   ],
   controllers: [FriendsController],
   providers: [FriendsService],

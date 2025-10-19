@@ -11,6 +11,8 @@ import {
   FriendRequestStatus,
 } from './entities/friend-request.entity';
 import { BlocksService } from '../blocks/blocks.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class FriendsService {
@@ -18,6 +20,7 @@ export class FriendsService {
     @InjectRepository(FriendRequest)
     private friendRequestRepository: Repository<FriendRequest>,
     private blocksService: BlocksService,
+    private notificationsService: NotificationsService,
   ) {}
 
   // Envoyer une demande d'ami
@@ -83,7 +86,27 @@ export class FriendsService {
       status: FriendRequestStatus.PENDING,
     });
 
-    return await this.friendRequestRepository.save(request);
+    const savedRequest = await this.friendRequestRepository.save(request);
+
+    // 🔥 NOUVELLE MAGIE : Créer une notification pour le destinataire ! 🔥
+    // On récupère d'abord les infos de l'expéditeur pour le message
+    const sender = await this.friendRequestRepository
+      .createQueryBuilder('fr')
+      .leftJoinAndSelect('fr.sender', 'sender')
+      .where('fr.id = :id', { id: savedRequest.id })
+      .getOne();
+
+    if (sender) {
+      await this.notificationsService.create(
+        receiverId,
+        NotificationType.FRIEND_REQUEST,
+        "Nouvelle demande d'ami",
+        `${sender.sender.username} vous a envoyé une demande d'ami`,
+        savedRequest.id,
+      );
+    }
+
+    return savedRequest;
   }
 
   // Accepter une demande
