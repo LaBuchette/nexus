@@ -10,7 +10,7 @@ import { MessagesModule } from './messages/messages.module';
 import { LfgModule } from './lfg/lfg.module';
 import { FriendsModule } from './friends/friends.module';
 import { BlocksModule } from './blocks/blocks.module';
-
+import { ReportsModule } from './reports/reports.module';
 @Module({
   imports: [
     // Module de configuration pour lire le fichier .env
@@ -44,6 +44,8 @@ import { BlocksModule } from './blocks/blocks.module';
     FriendsModule,
 
     BlocksModule,
+
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

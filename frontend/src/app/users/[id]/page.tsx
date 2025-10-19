@@ -28,6 +28,9 @@ export default function UserProfilePage() {
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [blockingUser, setBlockingUser] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
 
   useEffect(() => {
     // Récupérer l'utilisateur connecté
@@ -213,6 +216,60 @@ export default function UserProfilePage() {
     }
   };
 
+  // Envoyer un signalement
+  const submitReport = async () => {
+    if (!reportReason) {
+      alert("⚠️ Veuillez choisir un motif de signalement");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const hostname = window.location.hostname;
+
+      const response = await fetch(`http://${hostname}:3000/reports`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          reportedUserId: userId,
+          reason: reportReason,
+          description: reportDescription || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        alert(
+          `✅ Signalement envoyé avec succès !\n\n${user?.username} a été signalé pour "${reportReason}".\n\nNos modérateurs examineront votre signalement.`
+        );
+        // Fermer le modal et réinitialiser
+        setShowReportModal(false);
+        setReportReason("");
+        setReportDescription("");
+      } else {
+        const error = await response.json();
+
+        // Messages d'erreur personnalisés
+        if (response.status === 400) {
+          alert("❌ Vous ne pouvez pas vous signaler vous-même !");
+        } else if (response.status === 404) {
+          alert("❌ Cet utilisateur n'existe pas.");
+        } else if (response.status === 409) {
+          alert(
+            "⏳ Vous avez déjà signalé cet utilisateur récemment.\n\nVeuillez attendre 24 heures avant de le signaler à nouveau."
+          );
+        } else {
+          alert(`❌ Erreur : ${error.message || "Une erreur est survenue"}`);
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi du signalement:", error);
+      alert("❌ Une erreur réseau est survenue. Veuillez réessayer.");
+    }
+  };
+
   const getAvatarUrl = (user: User) => {
     return user.avatar
       ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.avatar}.png`
@@ -337,6 +394,15 @@ export default function UserProfilePage() {
                 {blockingUser ? "Blocage..." : "🚫 Bloquer"}
               </button>
             )}
+
+            {/* Bouton Signaler */}
+            <button
+              onClick={() => setShowReportModal(true)}
+              disabled={isBlocked}
+              className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white rounded-lg transition-colors font-semibold"
+            >
+              ⚠️ Signaler
+            </button>
           </div>
 
           {/* Informations */}
@@ -367,6 +433,120 @@ export default function UserProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Modal de Signalement */}
+          {showReportModal && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-gray-900/95 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border-2 border-orange-500/50 shadow-2xl">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white">
+                    ⚠️ Signaler {user.username}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowReportModal(false);
+                      setReportReason("");
+                      setReportDescription("");
+                    }}
+                    className="text-gray-400 hover:text-red-400 text-3xl transition-colors font-bold leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Formulaire */}
+                <div className="space-y-5">
+                  {/* Motif du signalement */}
+                  <div>
+                    <label className="block text-white font-bold mb-2 text-sm uppercase tracking-wide">
+                      Motif du signalement *
+                    </label>
+                    <select
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+                    >
+                      <option value="" className="bg-gray-800">
+                        -- Choisir un motif --
+                      </option>
+                      <option value="harassment" className="bg-gray-800">
+                        🚨 Harcèlement
+                      </option>
+                      <option value="hate_speech" className="bg-gray-800">
+                        💬 Discours haineux
+                      </option>
+                      <option value="spam" className="bg-gray-800">
+                        📧 Spam
+                      </option>
+                      <option value="cheating" className="bg-gray-800">
+                        🎮 Triche
+                      </option>
+                      <option
+                        value="inappropriate_content"
+                        className="bg-gray-800"
+                      >
+                        🔞 Contenu inapproprié
+                      </option>
+                      <option value="impersonation" className="bg-gray-800">
+                        👤 Usurpation d'identité
+                      </option>
+                      <option value="other" className="bg-gray-800">
+                        ❓ Autre
+                      </option>
+                    </select>
+                  </div>
+
+                  {/* Description optionnelle */}
+                  <div>
+                    <label className="block text-white font-bold mb-2 text-sm uppercase tracking-wide">
+                      Détails (optionnel)
+                    </label>
+                    <textarea
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      placeholder="Décrivez le problème rencontré..."
+                      maxLength={1000}
+                      rows={4}
+                      className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none font-medium"
+                    />
+                    <p className="text-gray-400 text-sm mt-2 font-medium">
+                      {reportDescription.length}/1000 caractères
+                    </p>
+                  </div>
+
+                  {/* Message d'avertissement */}
+                  <div className="bg-yellow-900/40 border-2 border-yellow-600/60 rounded-lg p-4">
+                    <p className="text-yellow-300 text-sm font-semibold leading-relaxed">
+                      ⚠️ Les faux signalements peuvent entraîner des sanctions
+                      contre votre compte.
+                    </p>
+                  </div>
+
+                  {/* Boutons */}
+                  <div className="flex gap-4 pt-2">
+                    <button
+                      onClick={() => {
+                        setShowReportModal(false);
+                        setReportReason("");
+                        setReportDescription("");
+                      }}
+                      className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all font-bold text-lg shadow-lg hover:shadow-xl"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={submitReport}
+                      disabled={!reportReason}
+                      className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-500 text-white rounded-lg transition-all font-bold text-lg shadow-lg hover:shadow-xl"
+                    >
+                      Envoyer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
