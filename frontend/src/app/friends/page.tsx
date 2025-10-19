@@ -291,16 +291,16 @@ export default function FriendsPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {friends.map((friendship) => {
-                  // Déterminer qui est l'ami (pas moi)
                   const friend =
                     friendship.sender.id === currentUserId
                       ? friendship.receiver
                       : friendship.sender;
 
                   return (
-                    <div
+                    <Link
+                      href={`/users/${friend.id}`}
                       key={friendship.id}
-                      className="bg-white/10 backdrop-blur-lg rounded-xl p-6 hover:bg-white/15 transition-all border border-white/20"
+                      className="bg-white/10 backdrop-blur-lg rounded-xl p-6 hover:bg-white/15 transition-all border border-white/20 block cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
                         <img
@@ -320,7 +320,7 @@ export default function FriendsPage() {
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
